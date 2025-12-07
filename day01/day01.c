@@ -1,59 +1,71 @@
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
 #include <sys/errno.h>
 
-#define ROT_LEN 4239
-// #define ROT_LEN 10
-
 struct Rotation {
     char direction;
-    int amount;
+    size_t amount;
 };
 
-int parseInt(const char* line, const int pos) {
-    int res = 0;
-    for (int i = pos; i < strlen(line) - 1; i++) {
+struct Data {
+    struct Rotation* rotations;
+    size_t n;
+    bool parse_successful;
+};
+
+size_t parseInt(const char* line, const size_t pos) {
+    size_t res = 0;
+    for (size_t i = pos; i < strlen(line) - 1; i++) {
         res = res * 10 + line[i] - '0';
     }
     return res;
 }
 
-struct Rotation* parseFile(const char* path) {
+struct Data parseFile(const char* path) {
     FILE* fp = fopen(path, "r");
     if (!fp) {
         fprintf(stderr, "failed to open %s: %s\n", path, strerror(errno));
-        return NULL;
+        return (struct Data) { NULL, 0, false };
     }
 
-    struct Rotation* rotations = malloc(sizeof(struct Rotation) * ROT_LEN);
+    size_t n = 0;
+    struct Rotation* rotations = malloc(sizeof(struct Rotation) * n);
     if (!rotations) {
         perror("Out of memory");
-        free(fp);
-        return NULL;
+        fclose(fp);
+        return (struct Data) { NULL, 0, false };
     }
 
     char* line = NULL;
     size_t len = 0;
-    for (int i = 0; i < ROT_LEN && getline(&line, &len, fp) != -1; i++) {
-        if (strlen(line) == 0) {
-            continue;
+    for (size_t i = 0; getline(&line, &len, fp) != -1; i++) {
+        struct Rotation* new = realloc(rotations, sizeof(struct Rotation) * (n + 1));
+        if (!new) {
+            perror("Out of memory");
+            free(line);
+            fclose(fp);
+            free(rotations);
+            return (struct Data) { NULL, 0, false };
         }
 
-        rotations[i].direction = line[0];
-        rotations[i].amount = parseInt(line, 1);
+        rotations = new;
+        rotations[n++] = (struct Rotation) { line[0], parseInt(line, 1) };
     }
 
     free(line);
     fclose(fp);
-    return rotations;
+    return (struct Data) { rotations, n, true };
 }
 
-int part1(const struct Rotation* rotations) {
-    // dial starts pointing at 50 because reasons
+int part1(const struct Data* data) {
+    const struct Rotation* rotations = data->rotations;
+    const size_t N = data->n;
+
     int curr = 50, times_zero = 0;
-    for (int i = 0; i < ROT_LEN; i++) {
+    for (size_t i = 0; i < N; i++) {
         switch (rotations[i].direction) {
         case 'L':
             curr -= rotations[i].amount;
@@ -73,25 +85,26 @@ int part1(const struct Rotation* rotations) {
     return times_zero;
 }
 
-int part2(const struct Rotation* rotations) {
+int part2(const struct Data* data) {
+    const struct Rotation* rotations = data->rotations;
+    const size_t N = data->n;
+    
     int curr = 50, times_zero = 0;
-    for (int i = 0; i < ROT_LEN; i++) {
+    for (size_t i = 0; i < N; i++) {
         const int prev = curr;
         switch (rotations[i].direction) {
         case 'L':
-            for (int j = 0; j < rotations[i].amount; j++) {
-                curr--;
-                if (curr % 100 == 0) {
-                    times_zero++;
-                }
+            curr -= rotations[i].amount;
+            times_zero += (prev - curr + 100) / 100;
+            if (curr < 0) {
+                curr = 100 + curr % 100;
             }
             break;
         case 'R':
-            for (int j = 0; j < rotations[i].amount; j++) {
-                curr++;
-                if (curr % 100 == 0) {
-                    times_zero++;
-                }
+            curr += rotations[i].amount;
+            times_zero += (curr - prev) / 100;
+            if (curr >= 100) {
+                curr %= 100;
             }
             break;
         default:
@@ -104,24 +117,24 @@ int part2(const struct Rotation* rotations) {
 
 int main(void) {
     const char* path = "inputs/day01.txt";
-    struct Rotation* rotations = parseFile(path);
-    if (rotations == NULL) {
+    const struct Data data = parseFile(path);
+    if (!data.parse_successful) {
         fprintf(stderr, "Unable to parse '%s'\n", path);
         return 1;
     }
 
-    const int p1 = part1(rotations);
+    const int p1 = part1(&data);
     if (p1 < 0) {
         goto end;
     }
     printf("Part 1: %d\n", p1);
 
-    const int p2 = part2(rotations);
+    const int p2 = part2(&data);
     if (p2 < 0) {
         goto end;
     }
     printf("Part 2: %d\n", p2);
 
 end:
-    free(rotations);
+    free(data.rotations);
 }
