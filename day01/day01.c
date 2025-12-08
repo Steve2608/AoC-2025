@@ -2,7 +2,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <time.h>
 #include <sys/errno.h>
 
 struct Rotation {
@@ -19,7 +18,7 @@ struct Data {
 size_t parseInt(const char* line, const size_t pos) {
     size_t res = 0;
     for (size_t i = pos; i < strlen(line) - 1; i++) {
-        res = res * 10 + line[i] - '0';
+        res = res * 10 + (size_t) (line[i] - '0');
     }
     return res;
 }
@@ -60,22 +59,23 @@ struct Data parseFile(const char* path) {
     return (struct Data) { rotations, n, true };
 }
 
-int part1(const struct Data* data) {
+size_t part1(const struct Data* data) {
     const struct Rotation* rotations = data->rotations;
     const size_t N = data->n;
 
-    int curr = 50, times_zero = 0;
+    int curr = 50;
+    size_t times_zero = 0;
     for (size_t i = 0; i < N; i++) {
         switch (rotations[i].direction) {
         case 'L':
-            curr -= rotations[i].amount;
+            curr -= (int) rotations[i].amount;
             break;
         case 'R':
-            curr += rotations[i].amount;
+            curr += (int) rotations[i].amount;
             break;
         default:
             fprintf(stderr, "Unknown direction %d\n", rotations[i].direction);
-            return -1;
+            return 0;
         }
 
         if (curr % 100 == 0) {
@@ -85,31 +85,32 @@ int part1(const struct Data* data) {
     return times_zero;
 }
 
-int part2(const struct Data* data) {
+size_t part2(const struct Data* data) {
     const struct Rotation* rotations = data->rotations;
     const size_t N = data->n;
     
-    int curr = 50, times_zero = 0;
+    int curr = 50;
+    size_t times_zero = 0;
     for (size_t i = 0; i < N; i++) {
         const int prev = curr;
         switch (rotations[i].direction) {
         case 'L':
-            curr -= rotations[i].amount;
-            times_zero += (prev - curr + 100) / 100;
+            curr -= (int) rotations[i].amount;
+            times_zero += (size_t) (prev - curr + 100) / 100;
             if (curr < 0) {
                 curr = 100 + curr % 100;
             }
             break;
         case 'R':
-            curr += rotations[i].amount;
-            times_zero += (curr - prev) / 100;
+            curr += (int) rotations[i].amount;
+            times_zero += (size_t) (curr - prev) / 100;
             if (curr >= 100) {
                 curr %= 100;
             }
             break;
         default:
             fprintf(stderr, "Unknown direction %d\n", rotations[i].direction);
-            return -1;
+            return 0;
         }
     }
     return times_zero;
@@ -123,18 +124,11 @@ int main(void) {
         return 1;
     }
 
-    const int p1 = part1(&data);
-    if (p1 < 0) {
-        goto end;
-    }
-    printf("Part 1: %d\n", p1);
+    const size_t p1 = part1(&data);
+    printf("Part 1: %zu\n", p1);
 
-    const int p2 = part2(&data);
-    if (p2 < 0) {
-        goto end;
-    }
-    printf("Part 2: %d\n", p2);
+    const size_t p2 = part2(&data);
+    printf("Part 2: %zu\n", p2);
 
-end:
     free(data.rotations);
 }
