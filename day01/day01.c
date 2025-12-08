@@ -4,16 +4,16 @@
 #include <string.h>
 #include <sys/errno.h>
 
-struct Rotation {
+typedef struct {
     char direction;
     size_t amount;
-};
+} Rotation;
 
-struct Data {
-    struct Rotation* rotations;
+typedef struct {
+    Rotation* rotations;
     size_t n;
     bool parse_successful;
-};
+} Data;
 
 size_t parseInt(const char* line, const size_t pos) {
     size_t res = 0;
@@ -23,44 +23,44 @@ size_t parseInt(const char* line, const size_t pos) {
     return res;
 }
 
-struct Data parseFile(const char* path) {
+Data parseFile(const char* path) {
     FILE* fp = fopen(path, "r");
     if (!fp) {
         fprintf(stderr, "failed to open %s: %s\n", path, strerror(errno));
-        return (struct Data) { NULL, 0, false };
+        return (Data) { NULL, 0, false };
     }
 
     size_t n = 0;
-    struct Rotation* rotations = malloc(sizeof(struct Rotation) * n);
+    Rotation* rotations = malloc(sizeof(Rotation) * n);
     if (!rotations) {
         perror("Out of memory");
         fclose(fp);
-        return (struct Data) { NULL, 0, false };
+        return (Data) { NULL, 0, false };
     }
 
     char* line = NULL;
     size_t len = 0;
-    for (size_t i = 0; getline(&line, &len, fp) != -1; i++) {
-        struct Rotation* new = realloc(rotations, sizeof(struct Rotation) * (n + 1));
+    while (getline(&line, &len, fp) >= 0) {
+        Rotation* new = realloc(rotations, sizeof(Rotation) * (n + 1));
         if (!new) {
             perror("Out of memory");
             free(line);
             fclose(fp);
             free(rotations);
-            return (struct Data) { NULL, 0, false };
+            return (Data) { NULL, 0, false };
         }
 
         rotations = new;
-        rotations[n++] = (struct Rotation) { line[0], parseInt(line, 1) };
+        rotations[n++] = (Rotation) { line[0], parseInt(line, 1) };
     }
 
     free(line);
     fclose(fp);
-    return (struct Data) { rotations, n, true };
+    return (Data) { rotations, n, true };
 }
 
-size_t part1(const struct Data* data) {
-    const struct Rotation* rotations = data->rotations;
+size_t part1(const Data* data) {
+    const Rotation* rotations = data->rotations;
     const size_t N = data->n;
 
     int curr = 50;
@@ -85,8 +85,8 @@ size_t part1(const struct Data* data) {
     return times_zero;
 }
 
-size_t part2(const struct Data* data) {
-    const struct Rotation* rotations = data->rotations;
+size_t part2(const Data* data) {
+    const Rotation* rotations = data->rotations;
     const size_t N = data->n;
     
     int curr = 50;
@@ -118,7 +118,7 @@ size_t part2(const struct Data* data) {
 
 int main(void) {
     const char* path = "inputs/day01.txt";
-    const struct Data data = parseFile(path);
+    const Data data = parseFile(path);
     if (!data.parse_successful) {
         fprintf(stderr, "Unable to parse '%s'\n", path);
         return 1;

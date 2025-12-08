@@ -4,18 +4,18 @@
 #include <string.h>
 #include <sys/errno.h>
 
-struct Data {
+typedef struct {
     unsigned char* batteries;
     size_t rows;
     size_t cols;
     bool parse_successful;
-};
+} Data;
 
-struct Data parseFile(const char* path) {
+Data parseFile(const char* path) {
     FILE* fp = fopen(path, "r");
     if (!fp) {
         fprintf(stderr, "failed to open %s: %s\n", path, strerror(errno));
-        return (struct Data) { NULL, 0, 0, false };
+        return (Data) { NULL, 0, 0, false };
     }
 
     size_t rows = 0;
@@ -24,12 +24,12 @@ struct Data parseFile(const char* path) {
     if (!data) {
         perror("Out of memory");
         fclose(fp);
-        return (struct Data) { NULL, 0, 0, false };
+        return (Data) { NULL, 0, 0, false };
     }
     
     char* line = NULL;
     size_t len = 0;
-    for (size_t i = 0; getline(&line, &len, fp) > 0; i++) {
+    while (getline(&line, &len, fp) > 0) {
         len = strlen(line);
         if (line[len - 1] == '\n') {
             len--;
@@ -43,7 +43,7 @@ struct Data parseFile(const char* path) {
             free(line);
             free(data);
             fclose(fp);
-            return (struct Data) { NULL, 0, 0, false };
+            return (Data) { NULL, 0, 0, false };
         }
         data = new;
         
@@ -56,7 +56,7 @@ struct Data parseFile(const char* path) {
 
     free(line);
     fclose(fp);
-    return (struct Data) { data, rows, cols, true };
+    return (Data) { data, rows, cols, true };
 }
 
 size_t bestTwo(const unsigned char* batteries, const size_t start, const size_t end) {
@@ -72,7 +72,7 @@ size_t bestTwo(const unsigned char* batteries, const size_t start, const size_t 
     return max;
 }
 
-size_t part1(const struct Data* data) {
+size_t part1(const Data* data) {
     const unsigned char* batteries = data->batteries;
     const size_t rows = data->rows, cols = data->cols;
     
@@ -109,7 +109,7 @@ size_t bestTwelve(const unsigned char* batteries, const size_t start, const size
     return best(batteries, start, end, 12);
 }
 
-size_t part2(const struct Data* data) {
+size_t part2(const Data* data) {
     const unsigned char* batteries = data->batteries;
     const size_t rows = data->rows, cols = data->cols;
     
@@ -123,7 +123,7 @@ size_t part2(const struct Data* data) {
 
 int main(void) {
     const char* path = "inputs/day03.txt";
-    const struct Data data = parseFile(path);
+    const Data data = parseFile(path);
     if (!data.parse_successful) {
         fprintf(stderr, "Unable to parse '%s'\n", path);
         return 1;

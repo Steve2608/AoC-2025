@@ -4,16 +4,16 @@
 #include <string.h>
 #include <sys/errno.h>
 
-struct Range {
+typedef struct {
     size_t start;
     size_t end;
-};
+} Range;
 
-struct Data {
-    struct Range* ranges;
+typedef struct {
+    Range* ranges;
     size_t n;
     bool parse_successful;
-};
+} Data;
 
 size_t parseInt(const char* line, const size_t start, const size_t end) {
     size_t res = 0;
@@ -23,26 +23,26 @@ size_t parseInt(const char* line, const size_t start, const size_t end) {
     return res;
 }
 
-struct Data parseFile(const char* path) {
+Data parseFile(const char* path) {
     FILE* fp = fopen(path, "r");
     if (!fp) {
         fprintf(stderr, "failed to open %s: %s\n", path, strerror(errno));
-        return (struct Data) { NULL, 0, false };
+        return (Data) { NULL, 0, false };
     }
 
     char* line = NULL;
     size_t len = 0;
     if (getline(&line, &len, fp) < 0) {
         fclose(fp);
-        return (struct Data) { NULL, 0, false };
+        return (Data) { NULL, 0, false };
     }
     fclose(fp);
 
     size_t n = 0;
-    struct Range* ranges = malloc(sizeof(struct Range) * n);
+    Range* ranges = malloc(sizeof(Range) * n);
     if (!ranges) {
         perror("Out of memory");
-        return (struct Data) { NULL, 0, false };
+        return (Data) { NULL, 0, false };
     }
     
     for (size_t i = 0; i < strlen(line); ) {
@@ -59,22 +59,22 @@ struct Data parseFile(const char* path) {
         }
         const size_t second = parseInt(line, start, i);
 
-        struct Range* new = realloc(ranges, sizeof(struct Range) * (n + 1));
+        Range* new = realloc(ranges, sizeof(Range) * (n + 1));
         if (!new) {
             free(line);
             free(ranges);
-            return (struct Data) { NULL, 0, false };
+            return (Data) { NULL, 0, false };
         }
 
         ranges = new;
-        ranges[n++] = (struct Range) { first, second };
+        ranges[n++] = (Range) { first, second };
         
         // skip ","
         i++;
     }
 
     free(line);
-    return (struct Data) { ranges, n, true };
+    return (Data) { ranges, n, true };
 }
 
 bool isSelfRepeatingOnce(const size_t val) {
@@ -90,13 +90,13 @@ bool isSelfRepeatingOnce(const size_t val) {
     return memcmp(num_str, num_str + half, half) == 0; 
 }
 
-size_t part1(const struct Data* data) {
-    const struct Range* ranges = data->ranges;
+size_t part1(const Data* data) {
+    const Range* ranges = data->ranges;
     const size_t N = data->n;
 
     size_t sum = 0;
     for (size_t i = 0; i < N; i++) {
-        const struct Range r = ranges[i];
+        const Range r = ranges[i];
         for (size_t j = r.start; j <= r.end; j++) {
             if (isSelfRepeatingOnce(j)) {
                 sum += j;
@@ -130,13 +130,13 @@ bool isSelfRepeating(const size_t val) {
     return false;
 }
 
-size_t part2(const struct Data* data) {
-    const struct Range* ranges = data->ranges;
+size_t part2(const Data* data) {
+    const Range* ranges = data->ranges;
     const size_t N = data->n;
 
     size_t sum = 0;
     for (size_t i = 0; i < N; i++) {
-        const struct Range r = ranges[i];
+        const Range r = ranges[i];
         for (size_t j = r.start; j <= r.end; j++) {
             if (isSelfRepeating(j)) {
                 sum += j;
@@ -148,7 +148,7 @@ size_t part2(const struct Data* data) {
 
 int main(void) {
     const char* path = "inputs/day02_sample.txt";
-    const struct Data data = parseFile(path);
+    const Data data = parseFile(path);
     if (!data.parse_successful) {
         fprintf(stderr, "Unable to parse '%s'\n", path);
         return 1;
