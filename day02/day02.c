@@ -2,7 +2,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <time.h>
 #include <sys/errno.h>
 
 struct Range {
@@ -19,7 +18,7 @@ struct Data {
 size_t parseInt(const char* line, const size_t start, const size_t end) {
     size_t res = 0;
     for (size_t i = start; i < end; i++) {
-        res = res * 10 + line[i] - '0';
+        res = res * 10 + (size_t) (line[i] - '0');
     }
     return res;
 }
@@ -43,7 +42,6 @@ struct Data parseFile(const char* path) {
     struct Range* ranges = malloc(sizeof(struct Range) * n);
     if (!ranges) {
         perror("Out of memory");
-        fclose(fp);
         return (struct Data) { NULL, 0, false };
     }
     
@@ -157,17 +155,10 @@ int main(void) {
     }
 
     const size_t p1 = part1(&data);
-    if (p1 < 0) {
-        goto end;
-    }
     printf("Part 1: %zu\n", p1);
 
     const size_t p2 = part2(&data);
-    if (p2 < 0) {
-        goto end;
-    }
     printf("Part 2: %zu\n", p2);
 
-end:
     free(data.ranges);
 }
