@@ -119,7 +119,6 @@ size_t part2(const struct Data* data) {
         sum += best;
     }
     return sum;
-
 }
 
 int main(void) {
