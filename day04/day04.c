@@ -15,7 +15,7 @@ Data parseFile(const char* path) {
     FILE* fp = fopen(path, "r");
     if (!fp) {
         fprintf(stderr, "failed to open %s: %s\n", path, strerror(errno));
-        return (Data) { NULL, 0, 0, false };
+        goto error;
     }
 
     size_t rows = 0;
@@ -23,10 +23,11 @@ Data parseFile(const char* path) {
     bool* data = malloc(sizeof(bool) * rows);
     if (!data) {
         perror("Out of memory");
+    error_1:
         fclose(fp);
-        return (Data) { NULL, 0, 0, false };
+        goto error;
     }
-    
+
     char* line = NULL;
     size_t len = 0;
     while (getline(&line, &len, fp) > 0) {
@@ -42,11 +43,10 @@ Data parseFile(const char* path) {
             perror("Out of memory");
             free(line);
             free(data);
-            fclose(fp);
-            return (Data) { NULL, 0, 0, false };
+            goto error_1;
         }
         data = new;
-        
+
         for (size_t j = 0; j < len; j++) {
             const bool b = (bool) (line[j] == '@');
             data[rows*cols + j] = b;
@@ -57,6 +57,8 @@ Data parseFile(const char* path) {
     free(line);
     fclose(fp);
     return (Data) { data, rows, cols, true };
+error:
+    return (Data) { NULL, 0, 0, false };
 }
 
 size_t nAdjacent(const bool* grid, const size_t rows, const size_t cols, const size_t i) {
@@ -118,7 +120,7 @@ size_t part2(const Data* data) {
         free(prev);
         return 0;
     }
-    
+
     memcpy(curr, grid, sizeof(bool) * rows * cols);
     size_t total_changes = 0;
     size_t n_changes;
@@ -131,7 +133,7 @@ size_t part2(const Data* data) {
                 n_changes++;
             }
         }
-    
+
         total_changes += n_changes;
     } while (n_changes > 0);
     free(prev);

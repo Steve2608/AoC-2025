@@ -27,15 +27,16 @@ Data parseFile(const char* path) {
     FILE* fp = fopen(path, "r");
     if (!fp) {
         fprintf(stderr, "failed to open %s: %s\n", path, strerror(errno));
-        return (Data) { NULL, 0, false };
+        goto error;
     }
 
     size_t n = 0;
     Rotation* rotations = malloc(sizeof(Rotation) * n);
     if (!rotations) {
         perror("Out of memory");
+    error_1:
         fclose(fp);
-        return (Data) { NULL, 0, false };
+        goto error;
     }
 
     char* line = NULL;
@@ -44,10 +45,9 @@ Data parseFile(const char* path) {
         Rotation* new = realloc(rotations, sizeof(Rotation) * (n + 1));
         if (!new) {
             perror("Out of memory");
-            free(line);
-            fclose(fp);
             free(rotations);
-            return (Data) { NULL, 0, false };
+            free(line);
+            goto error_1;
         }
 
         rotations = new;
@@ -57,6 +57,8 @@ Data parseFile(const char* path) {
     free(line);
     fclose(fp);
     return (Data) { rotations, n, true };
+error:
+    return (Data) { NULL, 0, false };
 }
 
 size_t part1(const Data* data) {
@@ -88,7 +90,7 @@ size_t part1(const Data* data) {
 size_t part2(const Data* data) {
     const Rotation* rotations = data->rotations;
     const size_t N = data->n;
-    
+
     int curr = 50;
     size_t times_zero = 0;
     for (size_t i = 0; i < N; i++) {

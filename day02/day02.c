@@ -27,14 +27,14 @@ Data parseFile(const char* path) {
     FILE* fp = fopen(path, "r");
     if (!fp) {
         fprintf(stderr, "failed to open %s: %s\n", path, strerror(errno));
-        return (Data) { NULL, 0, false };
+        goto error;
     }
 
     char* line = NULL;
     size_t len = 0;
     if (getline(&line, &len, fp) < 0) {
         fclose(fp);
-        return (Data) { NULL, 0, false };
+        goto error;
     }
     fclose(fp);
 
@@ -44,7 +44,7 @@ Data parseFile(const char* path) {
         perror("Out of memory");
         return (Data) { NULL, 0, false };
     }
-    
+
     for (size_t i = 0; i < strlen(line); ) {
         size_t start = i;
         while ('0' <= line[i] && line[i] <= '9') {
@@ -63,31 +63,33 @@ Data parseFile(const char* path) {
         if (!new) {
             free(line);
             free(ranges);
-            return (Data) { NULL, 0, false };
+            goto error;
         }
 
         ranges = new;
         ranges[n++] = (Range) { first, second };
-        
+
         // skip ","
         i++;
     }
 
     free(line);
     return (Data) { ranges, n, true };
+error:
+    return (Data) { NULL, 0, false };
 }
 
 bool isSelfRepeatingOnce(const size_t val) {
-    char num_str[32];
+    char num_str[21];
     sprintf(num_str, "%zu", val);
-    
+
     const size_t len = strlen(num_str);
     if (len % 2 != 0) {
         return false;
     }
-    
+
     size_t half = len / 2;
-    return memcmp(num_str, num_str + half, half) == 0; 
+    return memcmp(num_str, num_str + half, half) == 0;
 }
 
 size_t part1(const Data* data) {
@@ -107,26 +109,22 @@ size_t part1(const Data* data) {
 }
 
 bool isSelfRepeating(const size_t val) {
-    char num_str[32];
+    char num_str[21];
     sprintf(num_str, "%zu", val);
-    
+
     const size_t len = strlen(num_str);
-    for (size_t segment_len = 1; segment_len <= len / 2; segment_len++) {
+    outer: for (size_t segment_len = 1; segment_len <= len / 2; segment_len++) {
         if (len % segment_len != 0) {
             continue;
         }
-    
+
         for (size_t j = 0; j < len / segment_len - 1; j++) {
             if (memcmp(num_str + j * segment_len, num_str + (j + 1) * segment_len, segment_len) != 0) {
-                goto fail;
+                continue outer;
             }
         }
         return true;
-
-    fail:
-        continue;
     }
-
     return false;
 }
 

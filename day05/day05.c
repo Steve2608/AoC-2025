@@ -29,17 +29,18 @@ Data parseFile(const char* path) {
     FILE* fp = fopen(path, "r");
     if (!fp) {
         fprintf(stderr, "failed to open %s: %s\n", path, strerror(errno));
-        return (Data) { NULL, 0, NULL, 0, false };
+        goto error;
     }
 
     size_t n_ranges = 0;
     Range* ranges = malloc(sizeof(Range) * n_ranges);
     if (!ranges) {
         perror("Out of memory");
+    error_1:
         fclose(fp);
-        return (Data) { NULL, 0, NULL, 0, false };
+        goto error;
     }
-    
+
     char* line = NULL;
     size_t len = 0;
     while (getline(&line, &len, fp) > 0 && line[0] != '\n') {
@@ -54,14 +55,14 @@ Data parseFile(const char* path) {
             sep_i++;
         }
         const size_t second = parseInt(line, start_second, sep_i);
-        
+
         Range* new = realloc(ranges, sizeof(Range) * (n_ranges + 1));
         if (!new) {
             perror("Out of memory");
+        error_2:
             free(line);
             free(ranges);
-            fclose(fp);
-            return (Data) { NULL, 0, NULL, 0, false };
+            goto error_1;
         }
         ranges = new;
         ranges[n_ranges++] = (Range) { first, second };
@@ -70,9 +71,7 @@ Data parseFile(const char* path) {
     size_t n_ingredients = 0;
     size_t* ingredients = malloc(sizeof(size_t) * n_ingredients);
     if (!ingredients) {
-        free(line);
-        fclose(fp);
-        free(ranges);
+        goto error_2;
     }
 
     while (getline(&line, &len, fp) > 0) {
@@ -84,10 +83,7 @@ Data parseFile(const char* path) {
 
         size_t* new = realloc(ingredients, sizeof(size_t) * (n_ingredients + 1));
         if (!new) {
-            free(line);
-            fclose(fp);
-            free(ranges);
-            return (Data) { NULL, 0, NULL, 0, false };
+            goto error_2;
         }
         ingredients = new;
         ingredients[n_ingredients++] = ing;
@@ -96,6 +92,8 @@ Data parseFile(const char* path) {
     free(line);
     fclose(fp);
     return (Data) { ranges, n_ranges, ingredients, n_ingredients, true };
+error:
+    return (Data) { NULL, 0, NULL, 0, false };
 }
 
 bool isFresh(const Range* fresh, const size_t n, const size_t ingredient) {
@@ -125,7 +123,7 @@ size_t part1(const Data* data) {
 int compare(const void* a, const void* b) {
     const size_t a_start = ((const Range*) a)->start;
     const size_t b_start = ((const Range*) b)->start;
-    
+
     if (a_start < b_start) return -1;
     if (a_start > b_start) return 1;
     return 0;
@@ -160,7 +158,7 @@ size_t part2(const Data* data) {
             // current range is fully contained already
             if (curr->end_inclusive <= can->end_inclusive) {
                 continue;
-            } 
+            }
             // expand current range to the right
             else {
                 can->end_inclusive = curr->end_inclusive;
