@@ -8,9 +8,9 @@ typedef unsigned char byte;
 
 typedef struct {
     byte* batteries;
-    size_t rows;
-    size_t cols;
-    bool parse_successful;
+    const size_t rows;
+    const size_t cols;
+    const bool parse_successful;
 } Data;
 
 Data parseFile(const char* path) {
@@ -20,18 +20,9 @@ Data parseFile(const char* path) {
         goto error;
     }
 
-    size_t rows = 0;
-    size_t cols = 0;
-    byte* data = malloc(sizeof(byte) * rows);
-    if (!data) {
-        perror("Out of memory");
-    error_1:
-        fclose(fp);
-        goto error;
-    }
-
+    byte* data = NULL;
     char* line = NULL;
-    size_t len = 0;
+    size_t rows = 0, cols = 0, len;
     while (getline(&line, &len, fp) > 0) {
         len = strlen(line);
         if (line[len - 1] == '\n') {
@@ -43,9 +34,10 @@ Data parseFile(const char* path) {
         byte* new = realloc(data, sizeof(byte) * (rows + 1) * cols);
         if (!new) {
             perror("Out of memory");
-            free(line);
             free(data);
-            goto error_1;
+            free(line);
+            fclose(fp);
+            goto error;
         }
         data = new;
 

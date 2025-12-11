@@ -11,8 +11,8 @@ typedef struct {
 
 typedef struct {
     Range* ranges;
-    size_t n;
-    bool parse_successful;
+    const size_t n;
+    const bool parse_successful;
 } Data;
 
 size_t parseInt(const char* line, const size_t start, const size_t end) {
@@ -31,7 +31,7 @@ Data parseFile(const char* path) {
     }
 
     char* line = NULL;
-    size_t len = 0;
+    size_t len;
     if (getline(&line, &len, fp) < 0) {
         fclose(fp);
         goto error;
@@ -39,12 +39,7 @@ Data parseFile(const char* path) {
     fclose(fp);
 
     size_t n = 0;
-    Range* ranges = malloc(sizeof(Range) * n);
-    if (!ranges) {
-        perror("Out of memory");
-        return (Data) { NULL, 0, false };
-    }
-
+    Range* ranges = NULL;
     for (size_t i = 0; i < strlen(line); ) {
         size_t start = i;
         while ('0' <= line[i] && line[i] <= '9') {

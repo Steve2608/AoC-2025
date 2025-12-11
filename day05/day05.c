@@ -11,10 +11,10 @@ typedef struct {
 
 typedef struct {
     Range* fresh;
-    size_t n_fresh;
+    const size_t n_fresh;
     size_t* ingredients;
-    size_t n_ingredients;
-    bool parse_successful;
+    const size_t n_ingredients;
+    const bool parse_successful;
 } Data;
 
 size_t parseInt(const char* line, const size_t start, const size_t end) {
@@ -32,17 +32,9 @@ Data parseFile(const char* path) {
         goto error;
     }
 
-    size_t n_ranges = 0;
-    Range* ranges = malloc(sizeof(Range) * n_ranges);
-    if (!ranges) {
-        perror("Out of memory");
-    error_1:
-        fclose(fp);
-        goto error;
-    }
-
+    Range* ranges = NULL;
     char* line = NULL;
-    size_t len = 0;
+    size_t n_ranges = 0, len;
     while (getline(&line, &len, fp) > 0 && line[0] != '\n') {
         size_t sep_i = 0;
         while ('0' <= line[sep_i] && line[sep_i] <= '9') {
@@ -59,21 +51,18 @@ Data parseFile(const char* path) {
         Range* new = realloc(ranges, sizeof(Range) * (n_ranges + 1));
         if (!new) {
             perror("Out of memory");
-        error_2:
+        error_1:
             free(line);
             free(ranges);
-            goto error_1;
+            fclose(fp);
+            goto error;
         }
         ranges = new;
         ranges[n_ranges++] = (Range) { first, second };
     }
 
     size_t n_ingredients = 0;
-    size_t* ingredients = malloc(sizeof(size_t) * n_ingredients);
-    if (!ingredients) {
-        goto error_2;
-    }
-
+    size_t* ingredients = NULL;
     while (getline(&line, &len, fp) > 0) {
         size_t i = 0;
         while ('0' <= line[i] && line[i] <= '9') {
@@ -83,7 +72,8 @@ Data parseFile(const char* path) {
 
         size_t* new = realloc(ingredients, sizeof(size_t) * (n_ingredients + 1));
         if (!new) {
-            goto error_2;
+            free(ingredients);
+            goto error_1;
         }
         ingredients = new;
         ingredients[n_ingredients++] = ing;

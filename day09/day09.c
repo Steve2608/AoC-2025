@@ -11,8 +11,8 @@ typedef struct {
 
 typedef struct {
     Vec2* tiles;
-    size_t n;
-    bool parse_successful;
+    const size_t n;
+    const bool parse_successful;
 } Data;
 
 bool isDigit(const char c) {
@@ -34,17 +34,9 @@ Data parseFile(const char* path) {
         goto error;
     }
 
-    size_t n = 0;
-    Vec2* tiles = malloc(sizeof(Vec2) * n);
-    if (!tiles) {
-        perror("Out of memory.");
-    error_1:
-        fclose(fp);
-        goto error;
-    }
-
+    Vec2* tiles = NULL;
     char* line = NULL;
-    size_t len = 0;
+    size_t n = 0, len;
     while (getline(&line, &len, fp) > 0) {
         size_t start = 0, end = 1;
         while (isDigit(line[end])) {
@@ -62,7 +54,9 @@ Data parseFile(const char* path) {
         if (!new) {
             perror("Out of memory.");
             free(tiles);
-            goto error_1;
+            free(line);
+            fclose(fp);
+            goto error;
         }
 
         tiles = new;

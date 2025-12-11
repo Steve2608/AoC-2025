@@ -7,16 +7,16 @@
 typedef struct {
     size_t* numbers;
     char* signs;
-    size_t rows;
-    size_t cols;
-    bool parse_successful;
+    const size_t rows;
+    const size_t cols;
+    const bool parse_successful;
 } Data1;
 
 typedef struct {
     char** lines;
-    size_t rows;
+    const size_t rows;
     char* signs;
-    bool parse_successful;
+    const bool parse_successful;
 } Data2;
 
 bool isDigit(const char c) {
@@ -107,7 +107,7 @@ Data1 parseFilePart1(const char* path) {
     }
 
     char* line = NULL;
-    size_t len = 0;
+    size_t len;
     if (getline(&line, &len, fp) < 0) {
     error_1:
         fclose(fp);
@@ -235,17 +235,9 @@ Data2 parseFilePart2(const char* path) {
         goto error;
     }
 
-    size_t n_lines = 0;
-    char** lines = malloc(sizeof(char*) * n_lines);
-    if (!lines) {
-        perror("Out of memory.");
-    error_1:
-        fclose(fp);
-        goto error;
-    }
-
+    char** lines = NULL;
     char* line = NULL;
-    size_t chars_per_line = 0, len = 0;
+    size_t n_lines = 0, chars_per_line = 0, len;
     while (getline(&line, &len, fp) > 0) {
         if (containsSign(line)) {
             for (size_t curr_sign = 0, next_sign = indexNextSign(line, curr_sign); curr_sign < chars_per_line; curr_sign = next_sign, next_sign = indexNextSign(line, curr_sign)) {
@@ -266,20 +258,20 @@ Data2 parseFilePart2(const char* path) {
             char** new = realloc(lines, sizeof(char*) * (n_lines + 1));
             if (!new) {
                 perror("Out of memory.");
-            error_2:
+            error_1:
                 for (size_t i = 0; i < n_lines; i++) {
                     free(lines[i]);
                 }
                 free(lines);
                 free(line);
-                goto error_1;
+                goto error;
             }
             lines = new;
 
             char* curr_line = malloc(sizeof(char) * (chars_per_line + 1));
             if (!curr_line) {
                 perror("Out of memory.");
-                goto error_2;
+                goto error_1;
             }
             lines[n_lines++] = curr_line;
             memcpy(curr_line, line, chars_per_line + 1);

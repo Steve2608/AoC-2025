@@ -11,8 +11,8 @@ typedef struct {
 
 typedef struct {
     Rotation* rotations;
-    size_t n;
-    bool parse_successful;
+    const size_t n;
+    const bool parse_successful;
 } Data;
 
 size_t parseInt(const char* line, const size_t pos) {
@@ -30,24 +30,17 @@ Data parseFile(const char* path) {
         goto error;
     }
 
-    size_t n = 0;
-    Rotation* rotations = malloc(sizeof(Rotation) * n);
-    if (!rotations) {
-        perror("Out of memory");
-    error_1:
-        fclose(fp);
-        goto error;
-    }
-
+    Rotation* rotations = NULL;
     char* line = NULL;
-    size_t len = 0;
+    size_t n = 0, len;
     while (getline(&line, &len, fp) >= 0) {
         Rotation* new = realloc(rotations, sizeof(Rotation) * (n + 1));
         if (!new) {
             perror("Out of memory");
             free(rotations);
             free(line);
-            goto error_1;
+            fclose(fp);
+            goto error;
         }
 
         rotations = new;
