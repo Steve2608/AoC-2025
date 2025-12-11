@@ -262,6 +262,7 @@ size_t part1(const Data* data, const size_t n_junctions, const size_t top_k) {
     for (size_t i = 0; i < n_junctions; i++) {
         connections[i] = (Connection) { d[i].a, d[i].b };
     }
+    free(d);
 
     Vec3Array* components = malloc(sizeof(Vec3Array) * (top_k + 1));
     if (!components) {
@@ -295,7 +296,6 @@ size_t part1(const Data* data, const size_t n_junctions, const size_t top_k) {
     freeVec3Arrays(components, top_k + 1);
     free(components);
     free(connections);
-    free(d);
     return product;
 error:
     return 0;
