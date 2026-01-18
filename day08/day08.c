@@ -100,7 +100,7 @@ typedef struct {
 } Distances;
 
 typedef struct {
-    Vec3** nodes;
+    const Vec3** nodes;
     size_t n;
 } Vec3Array;
 
@@ -161,7 +161,7 @@ Vec3Array neighbors(const Connection* edges, const size_t n_edges, const Vec3* s
         goto error;
     }
 
-    Vec3** neighbors = malloc(sizeof(Vec3*) * n_neighbors);
+    const Vec3** neighbors = malloc(sizeof(const Vec3*) * n_neighbors);
     if (!neighbors) {
         perror("Out of memory.");
         goto error;
@@ -181,7 +181,7 @@ error:
 }
 
 void add_to_component(Vec3Array* component, const Vec3* node) {
-    Vec3** new = realloc(component->nodes, sizeof(Vec3*) * (component->n + 1));
+    const Vec3** new = realloc(component->nodes, sizeof(const Vec3*) * (component->n + 1));
     if (!new) {
         exit(1);
     }
@@ -301,18 +301,77 @@ error:
     return 0;
 }
 
+typedef struct {
+    size_t* id;
+    size_t n;
+    size_t count;
+} Components;
+
+Components initComponents(const Data* data) {
+    Components c = (Components) { NULL, data->n, data->n };
+    c.id = malloc(sizeof(size_t) * c.n);
+    if (!c.id) {
+        perror("Out of memory.");
+        return c;
+    }
+
+    for (size_t i = 0; i < c.n; i++) {
+        c.id[i] = i;
+    }
+    return c;
+}
+
+bool addConnectionStep(Components* comps, const Vec3* a, const Vec3* b, const Vec3* boxes) {
+    size_t ca = comps->id[(size_t) (a - boxes)];
+    size_t cb = comps->id[(size_t) (b - boxes)];
+
+    if (ca == cb) {
+        return false;
+    }
+
+    for (size_t i = 0; i < comps->n; i++) {
+        if (comps->id[i] == cb) {
+            comps->id[i] = ca;
+        }
+    }
+
+    comps->count--;
+    return true;
+}
+
 size_t part2(const Data* data) {
-    return data->n ^ data->n;
+    const Distances dists = distances(data->boxes, data->n);
+    if (!dists.n) {
+        return 0;
+    }
+
+    Components comps = initComponents(data);
+    if (!comps.id) {
+        return 0;
+    }
+
+    for (size_t i = 0; i < dists.n; i++) {
+        const Distance* d = &dists.distances[i];
+
+        if (addConnectionStep(&comps, d->a, d->b, data->boxes)) {
+            if (comps.count == 1) {
+                size_t result = (size_t)d->a->x * (size_t)d->b->x;
+                free(comps.id);
+                free(dists.distances);
+                return result;
+            }
+        }
+    }
+
+    free(comps.id);
+    free(dists.distances);
+    return 0;
 }
 
 int main(void) {
     const char* path = "inputs/day08.txt";
     const size_t n_junctions = 1000;
     const size_t top_k = 3;
-
-    // const char* path = "inputs/day08_sample.txt";
-    // const size_t n_junctions = 10;
-    // const size_t top_k = 3;
 
     const Data data = parseFile(path);
     if (!data.parse_successful) {
