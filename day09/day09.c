@@ -97,8 +97,131 @@ size_t part1(const Data* data) {
     return max_area;
 }
 
+typedef struct {
+    long x1;
+    long y1;
+    long x2;
+    long y2;
+} Edge;
+
+Edge* build_edges(const Data* data) {
+    Edge* edges = malloc(sizeof(Edge) * data->n);
+    if (!edges) {
+        return NULL;
+    }
+
+    for (size_t i = 0; i < data->n; i++) {
+        const Vec2 a = data->tiles[i];
+        const Vec2 b = data->tiles[(i + 1) % data->n];
+        edges[i] = (Edge) { a.x, a.y, b.x, b.y };
+    }
+
+    return edges;
+}
+
+bool point_inside(const Edge* edges, const size_t n, const long x, const long y) {
+    int crossings = 0;
+
+    for (size_t i = 0; i < n; i++) {
+        const Edge e = edges[i];
+
+        if (e.x1 == e.x2) {
+            const long ex = e.x1;
+            const long y1 = e.y1 < e.y2 ? e.y1 : e.y2;
+            const long y2 = e.y1 < e.y2 ? e.y2 : e.y1;
+
+            if (x == ex && y >= y1 && y <= y2) {
+                return true;
+            }
+
+            if (y >= y1 && y < y2 && ex > x) {
+                crossings++;
+            }
+        } else {
+            const long ey = e.y1;
+            const long x1 = e.x1 < e.x2 ? e.x1 : e.x2;
+            const long x2 = e.x1 < e.x2 ? e.x2 : e.x1;
+
+            if (y == ey && x >= x1 && x <= x2) {
+                return true;
+            }
+        }
+    }
+
+    return crossings % 2 == 1;
+}
+
+
+bool edge_intersects_rect(const Edge* e, const long minx, const long maxx, const long miny, const long maxy) {
+    if (e->x1 == e->x2) {
+        const long x = e->x1;
+        if (x <= minx || x >= maxx) {
+            return false;
+        }
+
+        const long y1 = e->y1 < e->y2 ? e->y1 : e->y2;
+        const long y2 = e->y1 < e->y2 ? e->y2 : e->y1;
+
+        return !(y2 <= miny || y1 >= maxy);
+    } else {
+        const long y = e->y1;
+        if (y <= miny || y >= maxy) {
+            return false;
+        }
+
+        const long x1 = e->x1 < e->x2 ? e->x1 : e->x2;
+        const long x2 = e->x1 < e->x2 ? e->x2 : e->x1;
+
+        return !(x2 <= minx || x1 >= maxx);
+    }
+}
+
 size_t part2(const Data* data) {
-    return 0;
+    Edge* edges = build_edges(data);
+    if (!edges) {
+        return 0;
+    }
+
+    size_t best = 0;
+    for (size_t i = 0; i < data->n; i++) {
+        const Vec2 a = data->tiles[i];
+
+        inner: for (size_t j = i + 1; j < data->n; j++) {
+            const Vec2 b = data->tiles[j];
+
+            const long minx = a.x < b.x ? a.x : b.x;
+            const long maxx = a.x > b.x ? a.x : b.x;
+            const long miny = a.y < b.y ? a.y : b.y;
+            const long maxy = a.y > b.y ? a.y : b.y;
+
+            if (!point_inside(edges, data->n, minx, miny)) {
+                continue;
+            }
+            if (!point_inside(edges, data->n, minx, maxy)) {
+                continue;
+            }
+            if (!point_inside(edges, data->n, maxx, miny)) {
+                continue;
+            }
+            if (!point_inside(edges, data->n, maxx, maxy)) {
+                continue;
+            }
+
+            for (size_t k = 0; k < data->n; k++) {
+                if (edge_intersects_rect(&edges[k], minx, maxx, miny, maxy)) {
+                    continue inner;
+                }
+            }
+
+            const size_t area = (size_t) (maxx - minx + 1) * (size_t) (maxy - miny + 1);
+            if (area > best) {
+                best = area;
+            }
+        }
+    }
+
+    free(edges);
+    return best;
 }
 
 int main(void) {
