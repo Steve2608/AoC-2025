@@ -151,7 +151,6 @@ bool point_inside(const Edge* edges, const size_t n, const long x, const long y)
     return crossings % 2 == 1;
 }
 
-
 bool edge_intersects_rect(const Edge* e, const long minx, const long maxx, const long miny, const long maxy) {
     if (e->x1 == e->x2) {
         const long x = e->x1;
