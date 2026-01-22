@@ -24,7 +24,9 @@ Data parseFile(const char* path) {
     size_t n = 0, start_x = 0, len;
     while (getline(&line, &len, fp) > 0) {
         len = strlen(line);
-        line[--len] = '\0';
+        if (line[len - 1] == '\n') {
+            line[--len] = '\0';
+        }
         if (!len) {
             break;
         }
@@ -45,7 +47,7 @@ Data parseFile(const char* path) {
         }
         lines = new;
 
-        char* memline = malloc(len);
+        char* memline = malloc(len + 1);
         if (!memline) {
             perror("Out of memory.");
         error_1:
@@ -57,7 +59,7 @@ Data parseFile(const char* path) {
             fclose(fp);
             goto error;
         }
-        memcpy(memline, line, len);
+        strcpy(memline, line);
         lines[n++] = memline;
     }
     free(line);
@@ -70,7 +72,7 @@ error:
 
 size_t countSplits(char** grid, const size_t depth) {
     size_t splits = 0;
-    for (size_t curr = 1, prev = 0; curr < depth; curr++, prev++) {
+    for (size_t curr = 1, prev = 0; curr < depth - 1; curr++, prev++) {
         for (size_t col = 0; col < strlen(grid[curr]); col++) {
             if (grid[curr][col] == '^' && grid[prev][col] == '|') {
                 grid[curr][col - 1] = '|';
@@ -92,7 +94,7 @@ size_t part1(const Data* data) {
         return 0;
     }
     for (size_t i = 0; i < data->depth; i++) {
-        grid[i] = malloc(data->width);
+        grid[i] = malloc((data->width + 1) * sizeof(char));
         if (!grid[i]) {
             perror("Out of memory.");
             for (size_t j = 0; j < i; j++) {
