@@ -1,9 +1,8 @@
-#include <math.h>
+#include <errno.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/errno.h>
 
 typedef struct {
     char** lines;
@@ -72,7 +71,7 @@ error:
 
 size_t countSplits(char** grid, const size_t depth) {
     size_t splits = 0;
-    for (size_t curr = 1, prev = 0; curr < depth - 1; curr++, prev++) {
+    for (size_t curr = 1, prev = 0; curr < depth; curr++, prev++) {
         for (size_t col = 0; col < strlen(grid[curr]); col++) {
             if (grid[curr][col] == '^' && grid[prev][col] == '|') {
                 grid[curr][col - 1] = '|';
